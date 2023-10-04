@@ -15,4 +15,5 @@
   "python.analysis.extraPaths": [
     "./world-generator-service/bin/"
   ],
+  "notebook.output.textLineLimit": 500,
 }

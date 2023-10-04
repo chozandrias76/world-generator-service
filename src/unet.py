@@ -1,11 +1,73 @@
 import tensorflow as tf
+from tensorflow import Tensor
+from typing import List
+
 
 IMG_WIDTH = 128
 IMG_HEIGHT = 128
 IMG_CHANNELS = 3
 
+STEPS = {0: 0.125, 1: 0.25, 2: 0.5, 1: 1}
+
 
 class UNet:
+    @classmethod
+    def contraction_path(cls, inputs, step) -> List[Tensor]:
+        convolution = tf.keras.layers.Conv2D(
+            IMG_WIDTH * step,
+            (3, 3),
+            activation="relu",
+            kernel_initializer="he_normal",
+            padding="same",
+        )(inputs)
+        convolution = tf.keras.layers.Dropout(0.1)(convolution)
+        convolution = tf.keras.layers.Conv2D(
+            IMG_WIDTH * step,
+            (3, 3),
+            activation="relu",
+            kernel_initializer="he_normal",
+            padding="same",
+            name=f"contraction_path-{step}"
+        )(convolution)
+        return [convolution, tf.keras.layers.MaxPooling2D((2, 2))(convolution)]  # type: ignore
+
+    @classmethod
+    def expansion_path(cls, inputs: Tensor, joinTo, filters, axis=-1) -> tf.keras.layers.Conv2D:
+        convolution = tf.keras.layers.Conv2DTranspose(
+            filters, (2, 2), strides=(2, 2), padding="same"
+        )(inputs)
+        convolution = tf.keras.layers.concatenate([convolution, joinTo], axis)
+        convolution = tf.keras.layers.Conv2D(
+            IMG_WIDTH,
+            (3, 3),
+            activation="relu",
+            kernel_initializer="he_normal",
+            padding="same",
+        )(convolution)
+        convolution = tf.keras.layers.Dropout(0.2)(convolution)
+        return tf.keras.layers.Conv2D(
+            IMG_WIDTH,
+            (3, 3),
+            activation="relu",
+            kernel_initializer="he_normal",
+            padding="same",
+            name=f"expansion_path-{filters}"
+        )(
+            convolution
+        )  # type: ignore
+
+    @classmethod
+    def generate_paths(cls, encoded_shape) -> Tensor:
+        c1, p1 = UNet.contraction_path(encoded_shape, 0.125)
+        c2, p2 = UNet.contraction_path(p1, 0.25)
+        c3, p3 = UNet.contraction_path(p2, 0.5)
+        c4, p4 = UNet.contraction_path(p3, 1)
+        c5, _ = UNet.contraction_path(p4, 2)
+        c6 = UNet.expansion_path(c5, c4, 128)
+        c7 = UNet.expansion_path(c6, c3, 64)
+        c8 = UNet.expansion_path(c7, c2, 32)
+        return UNet.expansion_path(c8, c1, 16, axis=3)
+
     def __init__(
         self,
         input_shape=(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS),
@@ -16,171 +78,7 @@ class UNet:
         inputs = tf.keras.layers.Input(input_shape)
         s = tf.keras.layers.Lambda(lambda x: x / 255)(inputs)
 
-        # Contraction path
-        c1 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 8,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(s)
-        c1 = tf.keras.layers.Dropout(0.1)(c1)
-        c1 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 8,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c1)
-        p1 = tf.keras.layers.MaxPooling2D((2, 2))(c1)
-
-        c2 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 4,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(p1)
-        c2 = tf.keras.layers.Dropout(0.1)(c2)
-        c2 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 4,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c2)
-        p2 = tf.keras.layers.MaxPooling2D((2, 2))(c2)
-
-        c3 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 2,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(p2)
-        c3 = tf.keras.layers.Dropout(0.2)(c3)
-        c3 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 2,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c3)
-        p3 = tf.keras.layers.MaxPooling2D((2, 2))(c3)
-
-        c4 = tf.keras.layers.Conv2D(
-            IMG_WIDTH,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(p3)
-        c4 = tf.keras.layers.Dropout(0.2)(c4)
-        c4 = tf.keras.layers.Conv2D(
-            IMG_WIDTH,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c4)
-        p4 = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(c4)
-
-        c5 = tf.keras.layers.Conv2D(
-            IMG_WIDTH * 2,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(p4)
-        c5 = tf.keras.layers.Dropout(0.3)(c5)
-        c5 = tf.keras.layers.Conv2D(
-            IMG_WIDTH * 2,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c5)
-
-        # Expansive path
-        u6 = tf.keras.layers.Conv2DTranspose(
-            128, (2, 2), strides=(2, 2), padding="same"
-        )(c5)
-        u6 = tf.keras.layers.concatenate([u6, c4])
-        c6 = tf.keras.layers.Conv2D(
-            IMG_WIDTH,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(u6)
-        c6 = tf.keras.layers.Dropout(0.2)(c6)
-        c6 = tf.keras.layers.Conv2D(
-            IMG_WIDTH,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c6)
-
-        u7 = tf.keras.layers.Conv2DTranspose(
-            64, (2, 2), strides=(2, 2), padding="same"
-        )(c6)
-        u7 = tf.keras.layers.concatenate([u7, c3])
-        c7 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 2,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(u7)
-        c7 = tf.keras.layers.Dropout(0.2)(c7)
-        c7 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 2,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c7)
-
-        u8 = tf.keras.layers.Conv2DTranspose(
-            32, (2, 2), strides=(2, 2), padding="same"
-        )(c7)
-        u8 = tf.keras.layers.concatenate([u8, c2])
-        c8 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 4,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(u8)
-        c8 = tf.keras.layers.Dropout(0.1)(c8)
-        c8 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 4,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c8)
-
-        u9 = tf.keras.layers.Conv2DTranspose(
-            16, (2, 2), strides=(2, 2), padding="same"
-        )(c8)
-        u9 = tf.keras.layers.concatenate([u9, c1], axis=3)
-        c9 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 8,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(u9)
-        c9 = tf.keras.layers.Dropout(0.1)(c9)
-        c9 = tf.keras.layers.Conv2D(
-            IMG_WIDTH / 8,
-            (3, 3),
-            activation="relu",
-            kernel_initializer="he_normal",
-            padding="same",
-        )(c9)
+        c9 = UNet.generate_paths(s)
 
         outputs = tf.keras.layers.Conv2D(1, (1, 1), activation="sigmoid")(c9)
 
