@@ -4,3 +4,4 @@ pandas
 GDAL==3.2.2
 tensorflow
 jupyter
+black
