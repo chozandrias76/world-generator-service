@@ -4,6 +4,7 @@ from src.unet import UNet
 import tensorflow as tf
 
 
+
 class TestUNet(unittest.TestCase):
     def setUp(self):
         self.unet_instance = UNet()
@@ -17,12 +18,6 @@ class TestUNet(unittest.TestCase):
 class TestUNetModelLayers(unittest.TestCase):
     def setUp(self):
         self.unet_instance = UNet()  # Initialize an instance of your UNet class
-
-    def test_layers(self):
-        # Get the model from your UNet instance
-        model = self.unet_instance.model
-
-        # List to hold the types of layers you expect in sequence
         expected_build_layers = [tf.keras.layers.InputLayer, tf.keras.layers.Lambda]
         expected_c1_path_layers = [
             tf.keras.layers.Conv2D,
@@ -72,11 +67,21 @@ class TestUNetModelLayers(unittest.TestCase):
             + expected_expansion_path
             + expected_output_paths
         )
+        self.expected_layers = expected_layers
+
+
+    def test_layers(self):
+        # Get the model from your UNet instance
+        model = self.unet_instance.model
+
+        # List to hold the types of layers you expect in sequence
 
         # Check if the layers in the model are of the same type as in expected_layers
-        for layer, expected_layer in zip(model.layers, expected_layers):
+        for index, (layer, expected_layer) in enumerate(zip(model.layers, self.expected_layers)):
             try:
                 self.assertTrue(isinstance(layer, expected_layer), msg=f"layer {layer} should be an instance of {expected_layer}")
+                if isinstance(layer, tf.keras.layers.InputLayer):
+                    self.assertEqual(layer.input_shape[0], (None, 128, 128, 3), msg="InputLayer should have input shape (None, 128, 128, 3)")
             except TypeError:
                 # concatenate
                 self.assertTrue(
