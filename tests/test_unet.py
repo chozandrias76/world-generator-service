@@ -4,7 +4,6 @@ from src.unet import UNet
 import tensorflow as tf
 
 
-
 class TestUNet(unittest.TestCase):
     def setUp(self):
         self.unet_instance = UNet()
@@ -46,20 +45,15 @@ class TestUNetModelLayers(unittest.TestCase):
             tf.keras.layers.concatenate,
             tf.keras.layers.Conv2D,
             tf.keras.layers.Dropout,
-            tf.keras.layers.Conv2D
+            tf.keras.layers.Conv2D,
         ]
         expected_c7_path = list(expected_c6_path)
         expected_c8_path = list(expected_c6_path)
         expected_c9_path = list(expected_c6_path)
         expected_expansion_path = (
-            expected_c6_path
-            + expected_c7_path
-            + expected_c8_path
-            + expected_c9_path
+            expected_c6_path + expected_c7_path + expected_c8_path + expected_c9_path
         )
-        expected_output_paths = [
-            tf.keras.layers.Conv2D
-        ]
+        expected_output_paths = [tf.keras.layers.Conv2D]
 
         expected_layers = (
             expected_build_layers
@@ -69,6 +63,7 @@ class TestUNetModelLayers(unittest.TestCase):
         )
         self.expected_layers = expected_layers
 
+        self.expected_layer_input_shape = {0: (None, 128, 128, 3)}
 
     def test_layers(self):
         # Get the model from your UNet instance
@@ -77,16 +72,22 @@ class TestUNetModelLayers(unittest.TestCase):
         # List to hold the types of layers you expect in sequence
 
         # Check if the layers in the model are of the same type as in expected_layers
-        for index, (layer, expected_layer) in enumerate(zip(model.layers, self.expected_layers)):
+        for index, (layer, expected_layer) in enumerate(
+            zip(model.layers, self.expected_layers)
+        ):
             try:
-                self.assertTrue(isinstance(layer, expected_layer), msg=f"layer {layer} should be an instance of {expected_layer}")
-                if isinstance(layer, tf.keras.layers.InputLayer):
-                    self.assertEqual(layer.input_shape[0], (None, 128, 128, 3), msg="InputLayer should have input shape (None, 128, 128, 3)")
+                self.assertTrue(
+                    isinstance(layer, expected_layer),
+                    msg=f"layer {layer} should be an instance of {expected_layer}",
+                )
+                self.assertEqual(
+                    layer.input_shape[0],
+                    self.expected_layer_input_shape[index],
+                    msg=f"{layer} should have input shape {self.expected_layer_input_shape[index]}",
+                )
             except TypeError:
                 # concatenate
-                self.assertTrue(
-                    callable(layer)
-                )
+                self.assertTrue(callable(layer))
 
 
 if __name__ == "__main__":
