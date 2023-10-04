@@ -12,5 +12,7 @@ setup:
 notebook:
 	$(DIR)jupyter notebook
 
+test:
+	$(DIR)python -m unittest discover -s tests
 
 .PHONY: %
