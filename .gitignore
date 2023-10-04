@@ -2,3 +2,4 @@ models/*
 gis-raw/*
 
 world-generator-service/*
+*/__pycache__/*

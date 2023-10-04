@@ -1,0 +1,6 @@
+numpy
+setuptools==58
+pandas
+GDAL==3.2.2
+tensorflow
+jupyter
