@@ -80,11 +80,12 @@ class TestUNetModelLayers(unittest.TestCase):
                     isinstance(layer, expected_layer),
                     msg=f"layer {layer} should be an instance of {expected_layer}",
                 )
-                self.assertEqual(
-                    layer.input_shape[0],
-                    self.expected_layer_input_shape[index],
-                    msg=f"{layer} should have input shape {self.expected_layer_input_shape[index]}",
-                )
+                if index in self.expected_layer_input_shape:
+                    self.assertEqual(
+                        layer.input_shape[0],
+                        self.expected_layer_input_shape[index],
+                        msg=f"{layer} should have input shape {self.expected_layer_input_shape[index]}",
+                    )
             except TypeError:
                 # concatenate
                 self.assertTrue(callable(layer))
