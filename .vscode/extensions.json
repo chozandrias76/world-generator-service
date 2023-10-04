@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-vscode-remote.remote-containers",
+    "ms-toolsai.jupyter",
+    "ms-python.black-formatter",
+    "ms-python.python",
+    "ms-toolsai.vscode-jupyter-slideshow",
+    "ms-toolsai.jupyter-renderers",
+    "ms-toolsai.jupyter-keymap",
+    "ms-toolsai.vscode-jupyter-cell-tags",
+    "mikestead.dotenv"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "python.testing.unittestEnabled": true,
+  "python.languageServer": "Default",
+  "python.autoComplete.extraPaths": [
+    "./world-generator-service/bin/"
+  ],
+  "python.defaultInterpreterPath": "./world-generator-service/bin/python",
+  "python.analysis.typeCheckingMode": "basic",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.formatOnType": true,
+    "editor.wordBasedSuggestions": false
+  },
+  "python.analysis.extraPaths": [
+    "./world-generator-service/bin/"
+  ],
+}
