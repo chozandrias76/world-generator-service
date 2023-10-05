@@ -6,3 +6,6 @@ tensorflow
 jupyter
 black
 black[jupyter]
+tqdm
+scikit-image
+matplotlib

@@ -3,3 +3,4 @@ gis-raw/*
 
 world-generator-service/*
 */__pycache__/*
+training-data/*
