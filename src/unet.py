@@ -7,6 +7,7 @@ IMG_WIDTH = 128
 IMG_HEIGHT = 128
 IMG_CHANNELS = 3
 
+
 class UNet:
     @classmethod
     def contraction_path(cls, inputs, step: float, drop_out: float) -> List[Tensor]:
