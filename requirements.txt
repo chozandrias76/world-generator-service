@@ -9,3 +9,4 @@ black[jupyter]
 tqdm
 scikit-image
 matplotlib
+rivamap
