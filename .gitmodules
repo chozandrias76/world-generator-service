@@ -1,0 +1,3 @@
+[submodule "rivamap"]
+	path = rivamap
+	url = https://github.com/chozandrias76/rivamap
